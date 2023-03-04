@@ -1,0 +1,69 @@
+import RPi.GPIO as GPIO
+import time
+import spidev
+
+# Setup GPIO
+LED_PIN = 17
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(LED_PIN, GPIO.OUT)
+
+# Setup SPI
+spi = spidev.SpiDev()
+spi.open(0, 0)
+spi.max_speed_hz = 1000000
+
+# Define threshold values
+LIGHT_THRESHOLD = 1000
+SOUND_THRESHOLD = 500
+
+# Blink LED function
+def blink_led(times, delay):
+    for i in range(times):
+        GPIO.output(LED_PIN, GPIO.HIGH)
+        time.sleep(delay)
+        GPIO.output(LED_PIN, GPIO.LOW)
+        time.sleep(delay)
+
+# Read light sensor function
+def read_light():
+    values = []
+    for i in range(50):
+        value = spi.xfer2([1, 8 + 0 << 4, 0])
+        values.append((value[1] & 3) << 8 | value[2])
+        time.sleep(0.1)
+    avg_value = sum(values) / len(values)
+    if avg_value > LIGHT_THRESHOLD:
+        print("Light: bright ({})".format(avg_value))
+    else:
+        print("Light: dark ({})".format(avg_value))
+
+# Read sound sensor function
+def read_sound():
+    while True:
+        value = spi.xfer2([1, 8 + 2 << 4, 0])
+        sound_value = (value[1] & 3) << 8 | value[2]
+        print("Sound: {}".format(sound_value))
+        if sound_value > SOUND_THRESHOLD:
+            GPIO.output(LED_PIN, GPIO.HIGH)
+            time.sleep(0.1)
+            GPIO.output(LED_PIN, GPIO.LOW)
+
+# Main loop
+while True:
+    # Blink LED 5 times with 500ms delay
+    blink_led(5, 0.5)
+
+    # Read light sensor for 5 seconds with 100ms delay
+    start_time = time.time()
+    while time.time() - start_time < 5:
+        read_light()
+        time.sleep(0.1)
+
+    # Blink LED 4 times with 200ms delay
+    blink_led(4, 0.2)
+
+    # Read sound sensor for 5 seconds with 100ms delay
+    start_time = time.time()
+    while time.time() - start_time < 5:
+        read_sound()
+        time.sleep(0.1)
