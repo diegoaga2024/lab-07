@@ -19,12 +19,12 @@ threshold= 400
 soundthresh= 600
 
 def handle_interrupt(channel):
-    if GPIO.input(13) == GPIO.HIGH
+    if (mcp.read_adc(1) > soundthresh):
         GPIO.output(11,1)
         time.sleep(0.1)
         GPIO.output(11,0)
 
-GPIO.add_event_detect(13, GPIO.BOTH, callback=handle_interrupt)
+GPIO.add_event_detect(13, GPIO.RISING, callback=handle_interrupt)
 
 # Main program loop.
 while True:
@@ -51,9 +51,10 @@ while True:
 	GPIO.output(11,0)
 	time.sleep(0.2)
     
-    print('Reading sound values, press Ctrl-C to quit...')
-    for i in range(50):
-        #print (mcp.read_adc(1))
-	if (mcp.read_adc(1)>soundthresh):
-            pass
-        time.sleep(0.1);
+    try:
+        print('Reading sound values, press Ctrl-C to quit...')
+	for i in range(50):        
+	   print (mcp.read_adc(1))
+    except KeyboardInterrupt:
+	print('Sound sensor tapped')
+
